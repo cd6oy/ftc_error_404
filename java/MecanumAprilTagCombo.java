@@ -31,12 +31,12 @@ public class MecanumAprilTagCombo extends LinearOpMode {
     private DcMotor backLeftMotor;
     private DcMotor frontRightMotor;
     private DcMotor backRightMotor;
-    private DcMotor shootMotor;
-    private CRServo intakeServo;
+    //private DcMotor shootMotor;
+    //private CRServo intakeServo;
     
-    private double y;
-    private double x;
-    private double rx;
+    private double y = 0;
+    private double x = 0;
+    private double rx = 0;
     final double DESIRED_DISTANCE = 48.0; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
@@ -73,8 +73,8 @@ public class MecanumAprilTagCombo extends LinearOpMode {
         backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
         frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
         backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
-        shootMotor = hardwareMap.dcMotor.get("shootMotor");
-        intakeServo = hardwareMap.crservo.get("intakeServo");
+        //shootMotor = hardwareMap.dcMotor.get("shootMotor");
+        //intakeServo = hardwareMap.crservo.get("intakeServo");
 
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
