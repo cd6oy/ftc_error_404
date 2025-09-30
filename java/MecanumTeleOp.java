@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
@@ -14,29 +13,22 @@ public class MecanumTeleOp extends LinearOpMode {
     private DcMotor frontRightMotor;
     private DcMotor backRightMotor;
     private DcMotor shootMotor;
-    private CRServo intakeServo;
+    private DcMotor intakeMotor;
 
     @Override
     public void runOpMode() throws InterruptedException {
         // Declare our motors
         // Make sure your ID's match your configuration
-        DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
-        DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
-        DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
-        DcMotor backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
         frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
         backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
         frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
         backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
         shootMotor = hardwareMap.dcMotor.get("shootMotor");
-        intakeServo = hardwareMap.crservo.get("intakeServo");
+        intakeMotor = hardwareMap.dcMotor.get("intakeMotor");
 
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
         // reverse the left side instead.
-        // See the note about this earlier on this page.
-        // frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        // backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -44,6 +36,7 @@ public class MecanumTeleOp extends LinearOpMode {
         // For example:
         // shootMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         // intakeServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        // intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         waitForStart();
 
@@ -75,7 +68,7 @@ public class MecanumTeleOp extends LinearOpMode {
             double shootPower = gamepad1.right_trigger;
 
             // Set power to the intake servo and shooter motor
-            intakeServo.setPower(intakePower);
+            intakeMotor.setPower(intakePower);
             shootMotor.setPower(shootPower);
         }
     }
