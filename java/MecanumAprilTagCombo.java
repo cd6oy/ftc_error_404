@@ -2,6 +2,8 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import java.util.concurrent.TimeUnit;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -42,10 +44,10 @@ public class MecanumAprilTagCombo extends LinearOpMode {
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    final double SPEED_GAIN =   0.035 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    final double TURN_GAIN  =   0.017;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
-    final double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
+    final double MAX_AUTO_SPEED = 0.75;   //  Clip the approach speed to this max value (adjust for your robot)
     final double MAX_AUTO_TURN  = 0.25;  //  Clip the turn speed to this max value (adjust for your robot)
 
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
@@ -91,8 +93,8 @@ public class MecanumAprilTagCombo extends LinearOpMode {
         // intakeServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
-        //if (USE_WEBCAM)
-        //    setManualExposure(1, 300);  // Use low exposure time to reduce motion blur
+        if (USE_WEBCAM)
+            setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
 
         // Wait for the driver to press Start
         telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
@@ -132,6 +134,7 @@ public class MecanumAprilTagCombo extends LinearOpMode {
                 telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
                 telemetry.addData("Range",  "%5.1f inches", desiredTag.ftcPose.range);
                 telemetry.addData("Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
+                telemetry.addData("Yaw","%3.0f degrees", desiredTag.ftcPose.yaw);
             } else {
                 telemetry.addData("\n>","Drive using joysticks to find valid target\n");
             }
@@ -142,33 +145,79 @@ public class MecanumAprilTagCombo extends LinearOpMode {
                 if (targetFound) {
                     // Determine heading and range error so we can use them to control the robot automatically.
                     double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
+                    double  yawError = (desiredTag.ftcPose.yaw);
                     double  headingError = desiredTag.ftcPose.bearing;
 
                     // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
                     y = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-                    //x
-                    rx  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
+                    x = Range.clip(yawError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                    rx  = -Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
+                    
+                    double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+                    double frontLeftPower = (y + x + rx) / denominator;
+                    double backLeftPower = (y - x + rx) / denominator;
+                    double frontRightPower = (y - x - rx) / denominator;
+                    double backRightPower = (y + x - rx) / denominator;
 
-                    telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
+                    frontLeftMotor.setPower(frontLeftPower);
+                    backLeftMotor.setPower(backLeftPower);
+                    frontRightMotor.setPower(frontRightPower);
+                    backRightMotor.setPower(backRightPower);
+                    telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", y, rx);
                 } else {
-                    frontLeftMotor.setPower(0);
-                    frontRightMotor.setPower(0);
-                    backLeftMotor.setPower(0);
-                    backRightMotor.setPower(0);
+                    y = 0;
+                    x = 0;
+                    rx  = 0;
+                    
+                    double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+                    double frontLeftPower = (y + x + rx) / denominator;
+                    double backLeftPower = (y - x + rx) / denominator;
+                    double frontRightPower = (y - x - rx) / denominator;
+                    double backRightPower = (y + x - rx) / denominator;
+
+                    frontLeftMotor.setPower(frontLeftPower);
+                    backLeftMotor.setPower(backLeftPower);
+                    frontRightMotor.setPower(frontRightPower);
+                    backRightMotor.setPower(backRightPower);
+                    telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", y, rx);
                 }
 
             } else {
 
                 // drive using manual POV Joystick mode.
-                y = -gamepad1.left_stick_y  / 2.0;  // Reduce drive rate to 50%.
+                y = -gamepad1.left_stick_y;  // Reduce drive rate to 50%.
                 x = gamepad1.left_stick_x * 1.1; // to counteract imperfect strafing;
-                rx  = -gamepad1.right_stick_x / 4.0;  // Reduce turn rate to 25%.
+                rx  = gamepad1.right_stick_x;  // Reduce turn rate to 25%.
                 telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
+                
+                // Denominator is the largest motor power (absolute value) or 1
+                // This ensures all the powers maintain the same ratio,
+                // but only if at least one is out of the range [-1, 1]
+                double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+                double frontLeftPower = (y + x + rx) / denominator;
+                double backLeftPower = (y - x + rx) / denominator;
+                double frontRightPower = (y - x - rx) / denominator;
+                double backRightPower = (y + x - rx) / denominator;
+    
+                frontLeftMotor.setPower(frontLeftPower);
+                backLeftMotor.setPower(backLeftPower);
+                frontRightMotor.setPower(frontRightPower);
+                backRightMotor.setPower(backRightPower);
             }
             telemetry.update();
 
-            // Apply desired axes motions to the drivetrain.
-            moveRobot(y, x, rx);
+
+
+
+            // --- Intake and Shooter Control ---
+            // The triggers return a value from 0.0 to 1.0, which is perfect for continuous power
+            //double intakePower = gamepad1.left_trigger;
+           // double shootPower = gamepad1.right_trigger;
+
+            // Set power to the intake servo and shooter motor
+          //  intakeServo.setPower(intakePower);
+          //  shootMotor.setPower(shootPower);
+
             sleep(10);
         }
     }
@@ -180,23 +229,23 @@ public class MecanumAprilTagCombo extends LinearOpMode {
      * <p>
      * Positive Yaw is counter-clockwise
      */
-    public void moveRobot(double y, double x, double rx) {
-        // Calculate left and right wheel powers.
-        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-        double frontLeftPower = (y + x + rx) / denominator;
-        double backLeftPower = (y - x + rx) / denominator;
-        double frontRightPower = (y - x - rx) / denominator;
-        double backRightPower = (y + x - rx) / denominator;
+//    public void moveRobot(double y, double x, double rx) {
+//        // Calculate left and right wheel powers.
+//        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+//        double frontLeftPower = (y + x + rx) / denominator;
+//        double backLeftPower = (y - x + rx) / denominator;
+//        double frontRightPower = (y - x - rx) / denominator;
+//        double backRightPower = (y + x - rx) / denominator;
 
     
 
     // Send powers to the wheels.
-            frontLeftMotor.setPower(frontLeftPower);
-            backLeftMotor.setPower(backLeftPower);
-            frontRightMotor.setPower(frontRightPower);
-            backRightMotor.setPower(backRightPower);
+//            frontLeftMotor.setPower(frontLeftPower);
+//            backLeftMotor.setPower(backLeftPower);
+//            frontRightMotor.setPower(frontRightPower);
+//            backRightMotor.setPower(backRightPower);
 
-}
+//}
 
 /**
  * Initialize the AprilTag processor.
